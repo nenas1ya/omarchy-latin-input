@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "latin-input",
+  "id": "nenas1ya.latin-input",
   "name": "Latin input",
   "version": "1.0.0",
-  "author": "nst",
-  "description": "Switch to US layout while the Omarchy menu or a terminal is focused, then restore.",
+  "author": "nenas1ya",
+  "description": "Switch to the first keyboard layout in menu and terminal, then restore.",
   "kinds": [
     "service"
   ],
