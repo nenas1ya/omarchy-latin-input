@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "latin-input",
+  "name": "Latin input",
+  "version": "1.0.0",
+  "author": "nst",
+  "description": "Switch to US layout while the Omarchy menu or a terminal is focused, then restore.",
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
