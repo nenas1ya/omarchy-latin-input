@@ -18,7 +18,7 @@ hl.config({
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/YOUR_USER/omarchy-latin-input.git --enable
+omarchy plugin add https://github.com/nenas1ya/omarchy-latin-input.git --enable
 ```
 
 Or copy the folder into `~/.config/omarchy/plugins/latin-input`, then:
