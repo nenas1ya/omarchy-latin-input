@@ -1,4 +1,4 @@
-# Latin input
+# Auto Latin in menu and terminal
 
 Omarchy shell plugin that temporarily switches to the first keyboard layout (usually US) while the Omarchy menu or a terminal is focused, then restores the previous layout when you leave.
 

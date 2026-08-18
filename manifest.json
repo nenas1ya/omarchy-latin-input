@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "nenas1ya.latin-input",
-  "name": "Latin input",
-  "version": "1.0.0",
+  "name": "Auto Latin in menu and terminal",
+  "version": "1.0.1",
   "author": "nenas1ya",
-  "description": "Switch to the first keyboard layout in menu and terminal, then restore.",
+  "description": "Automatically switch to the first keyboard layout in menu and terminal, then restore.",
   "kinds": [
     "service"
   ],
