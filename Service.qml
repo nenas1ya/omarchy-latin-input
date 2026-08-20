@@ -17,13 +17,14 @@ Item {
     return shell.pluginRegistry.resolveEnabledId("omarchy.menu") || "omarchy.menu"
   }
 
-  readonly property bool menuOpen: shell && shell.openPanelIds
-    ? shell.openPanelIds[menuPluginId] === true
-    : false
+  readonly property bool menuOpen: shell && typeof shell.isPluginOpen === "function"
+    ? shell.isPluginOpen(menuPluginId)
+    : shell && shell.openPanelIds
+      ? shell.openPanelIds[menuPluginId] === true
+      : false
 
   function applyOpenResult(context, devices) {
-    var keyboards = LatinModel.switchableKeyboards(devices)
-    var saved = LatinModel.savedLayouts(keyboards)
+    var saved = LatinModel.nonUsLayouts(devices)
     if (!Object.keys(saved).length) return
 
     root.latinState = LatinModel.beginState(saved, context)
@@ -34,7 +35,7 @@ Item {
     var result = LatinModel.openContext(root.latinState, context)
     root.latinState = result.state
 
-    if (result.action === "prepare-open") {
+    if (result.action === "prepare-open" && !devicesProc.running) {
       root.pendingOpenContext = context
       devicesProc.running = true
     }
@@ -76,31 +77,23 @@ Item {
     else root.closeLatinContext("terminal")
   }
 
-  function refreshActiveWindow() {
-    if (!activeWindowProc.running) activeWindowProc.running = true
-  }
-
   Component.onCompleted: {
     Qt.callLater(function() {
       root.syncMenu()
-      root.refreshActiveWindow()
+      if (!activeWindowProc.running) activeWindowProc.running = true
     })
   }
 
   onMenuOpenChanged: root.syncMenu()
 
   Connections {
-    target: root.shell
-    function onOpenPanelIdsChanged() { root.syncMenu() }
-  }
-
-  Connections {
     target: Hyprland
     function onRawEvent(event) {
       if (!event || !event.name) return
       var name = String(event.name)
-      if (name === "activewindow" || name === "activewindowv2" || name === "configreloaded")
-        root.refreshActiveWindow()
+      if (name === "activewindowv2" || name === "configreloaded") {
+        if (!activeWindowProc.running) activeWindowProc.running = true
+      }
     }
   }
 
@@ -114,13 +107,7 @@ Item {
         root.pendingOpenContext = ""
         if (!context) return
 
-        var devices
-        try {
-          devices = JSON.parse(text || "{}")
-        } catch (error) {
-          return
-        }
-
+        var devices = JSON.parse(text || "{}")
         root.applyOpenResult(context, devices)
       }
     }
@@ -132,12 +119,7 @@ Item {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
-        var client = null
-        try {
-          client = JSON.parse(text || "null")
-        } catch (error) {
-          client = null
-        }
+        var client = JSON.parse(text || "null")
         root.syncTerminal(client)
       }
     }
