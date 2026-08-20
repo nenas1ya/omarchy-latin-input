@@ -11,6 +11,7 @@ Item {
   property var latinState: null
   property bool terminalActive: false
   property string pendingOpenContext: ""
+  property string typedKeyboardName: ""
 
   readonly property string menuPluginId: {
     if (!shell || !shell.pluginRegistry) return "omarchy.menu"
@@ -22,7 +23,7 @@ Item {
     : false
 
   function applyOpenResult(context, devices) {
-    var keyboard = LatinModel.selectKeyboard(devices)
+    var keyboard = LatinModel.selectKeyboard(devices, root.typedKeyboardName)
     if (!keyboard) return
 
     var savedIndex = LatinModel.layoutIndex(keyboard)
@@ -91,6 +92,11 @@ Item {
     function onRawEvent(event) {
       if (!event || !event.name) return
       var name = String(event.name)
+      if (name === "activelayout") {
+        var named = LatinModel.eventKeyboardName(event)
+        if (named) root.typedKeyboardName = named
+      }
+
       if (name === "activewindow" || name === "activewindowv2" || name === "configreloaded")
         root.refreshActiveWindow()
     }

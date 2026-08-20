@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "nenas1ya.latin-input",
   "name": "Auto Latin in menu and terminal",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "nenas1ya",
   "description": "Automatically switch to the first keyboard layout in menu and terminal, then restore.",
   "kinds": [

@@ -1,6 +1,12 @@
 var UNTYPED_KEYBOARDS = /^(hl-virtual-keyboard|power-button|sleep-button|lid-switch|video-bus|.*-consumer-control$|.*-system-control$)/
 var TERMINAL_CLASS = /^(Alacritty|kitty|com\.mitchellh\.ghostty|foot|org\.codeberg\.dnkl\.foot|wezterm|org\.omarchy\.|TUI\.)/
 
+function hasMultiLayout(keyboard) {
+  return !!(keyboard
+    && keyboard.layout
+    && String(keyboard.layout).indexOf(",") !== -1)
+}
+
 function isTypedKeyboard(name) {
   return !UNTYPED_KEYBOARDS.test(String(name || ""))
 }
@@ -12,19 +18,46 @@ function layoutIndex(keyboard) {
 function typedKeyboards(devices) {
   var keyboards = devices && devices.keyboards ? devices.keyboards : []
   return keyboards.filter(function(keyboard) {
-    return keyboard
-      && keyboard.layout
-      && String(keyboard.layout).indexOf(",") !== -1
-      && isTypedKeyboard(keyboard.name)
+    return keyboard && hasMultiLayout(keyboard) && isTypedKeyboard(keyboard.name)
   })
 }
 
-function selectKeyboard(devices) {
+function fcitxVirtualKeyboard(devices) {
+  var keyboards = devices && devices.keyboards ? devices.keyboards : []
+  for (var i = 0; i < keyboards.length; i++) {
+    var keyboard = keyboards[i]
+    if (!keyboard) continue
+    var name = String(keyboard.name || "")
+    if (name.indexOf("hl-virtual-keyboard") !== 0) continue
+    if (!hasMultiLayout(keyboard)) continue
+    return keyboard
+  }
+  return null
+}
+
+function eventKeyboardName(event) {
+  var parts
+
+  try {
+    if (event && event.parse) parts = event.parse(2)
+  } catch (error) {
+  }
+
+  if (!parts) parts = String(event && event.data ? event.data : "").split(",")
+
+  var name = String(parts[0] || "")
+  return name.indexOf("hl-virtual-keyboard") === 0 ? "" : name
+}
+
+function selectKeyboard(devices, namedByEvent) {
+  var fcitx = fcitxVirtualKeyboard(devices)
+  if (fcitx) return fcitx
+
   var typed = typedKeyboards(devices)
   if (!typed.length) return null
 
   for (var i = 0; i < typed.length; i++) {
-    if (typed[i].main === true) return typed[i]
+    if (typed[i].name === namedByEvent) return typed[i]
   }
 
   return typed.reduce(function(best, keyboard) {
@@ -107,6 +140,8 @@ if (typeof module !== "undefined") {
   module.exports = {
     beginState: beginState,
     closeContext: closeContext,
+    eventKeyboardName: eventKeyboardName,
+    fcitxVirtualKeyboard: fcitxVirtualKeyboard,
     hasContext: hasContext,
     isTerminal: isTerminal,
     layoutIndex: layoutIndex,
@@ -114,5 +149,18 @@ if (typeof module !== "undefined") {
     selectKeyboard: selectKeyboard,
     shouldSwitchToUs: shouldSwitchToUs,
     typedKeyboards: typedKeyboards
+  }
+}
+
+if (typeof require !== "undefined" && require.main === module) {
+  var devices = {
+    keyboards: [
+      { name: "sonix-usb-keyboard", layout: "us,ru", active_layout_index: 1, main: false },
+      { name: "hl-virtual-keyboard-fcitx5", layout: "us,ru", active_layout_index: 1, main: true }
+    ]
+  }
+  var selected = selectKeyboard(devices)
+  if (!selected || selected.name !== "hl-virtual-keyboard-fcitx5") {
+    throw new Error("expected fcitx virtual keyboard, got " + (selected && selected.name))
   }
 }
