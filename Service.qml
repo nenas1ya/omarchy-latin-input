@@ -11,7 +11,6 @@ Item {
   property var latinState: null
   property bool terminalActive: false
   property string pendingOpenContext: ""
-  property string typedKeyboardName: ""
 
   readonly property string menuPluginId: {
     if (!shell || !shell.pluginRegistry) return "omarchy.menu"
@@ -23,13 +22,12 @@ Item {
     : false
 
   function applyOpenResult(context, devices) {
-    var keyboard = LatinModel.selectKeyboard(devices, root.typedKeyboardName)
-    if (!keyboard) return
+    var keyboards = LatinModel.switchableKeyboards(devices)
+    var saved = LatinModel.savedLayouts(keyboards)
+    if (!Object.keys(saved).length) return
 
-    var savedIndex = LatinModel.layoutIndex(keyboard)
-    root.latinState = LatinModel.beginState(keyboard, savedIndex, context)
-    if (LatinModel.shouldSwitchToUs(savedIndex))
-      switchLayout(keyboard.name, 0)
+    root.latinState = LatinModel.beginState(saved, context)
+    switchLayouts(saved, 0)
   }
 
   function openLatinContext(context) {
@@ -46,12 +44,21 @@ Item {
     var result = LatinModel.closeContext(root.latinState, context)
     root.latinState = result.state
     if (result.action === "restore")
-      switchLayout(result.keyboard, result.savedIndex)
+      switchLayouts(result.layouts)
   }
 
-  function switchLayout(keyboardName, layoutIndex) {
-    if (!keyboardName) return
-    layoutProc.command = ["hyprctl", "switchxkblayout", String(keyboardName), String(layoutIndex)]
+  function switchLayouts(layouts, layoutIndex) {
+    var names = Object.keys(layouts || {})
+    if (!names.length) return
+
+    var commands = []
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i]
+      var index = layoutIndex === undefined ? layouts[name] : layoutIndex
+      commands.push("hyprctl switchxkblayout " + name + " " + index)
+    }
+
+    layoutProc.command = ["bash", "-c", commands.join("; ")]
     layoutProc.running = true
   }
 
@@ -92,11 +99,6 @@ Item {
     function onRawEvent(event) {
       if (!event || !event.name) return
       var name = String(event.name)
-      if (name === "activelayout") {
-        var named = LatinModel.eventKeyboardName(event)
-        if (named) root.typedKeyboardName = named
-      }
-
       if (name === "activewindow" || name === "activewindowv2" || name === "configreloaded")
         root.refreshActiveWindow()
     }
